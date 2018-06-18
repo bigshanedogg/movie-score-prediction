@@ -2,6 +2,7 @@ import gensim
 import pickle
 import numpy as np
 import csv
+from gensim.models import KeyedVectors
 
 
 def w2v_embedding(tokenizer, feature_size) :
@@ -11,8 +12,7 @@ def w2v_embedding(tokenizer, feature_size) :
     min_count = model.min_count
     feature_size = model.vector_size
     print(tokenizer, "w2v\n\treview min_count: %d, review feature_size: %d" %(min_count, feature_size))
-
-
+    
     output_path = "pos_data/review_pos/"
     review_pos = []
     with open(output_path+"review_" + tokenizer + "_pos.txt", mode="rb") as fp :
@@ -52,6 +52,30 @@ def get_vec_from_csv(csv_path, feature_size) :
 
     return vec
 
+def fastText_embedding(tokenizer, feature_size) :
+    # input file 지정
+    input_path = "input_as_vec/"
+    input_fileName = input_path + 'model_dim' + str(feature_size) + '.vec'
+    model = KeyedVectors.load_word2vec_format(input_fileName)
+    
+    # 단어 리스트 작성
+    vocab = model.index2word
+    
+    # 전체 단어벡터 추출
+    vecs = []
+    for v in vocab:
+        vecs.append(model.wv[v])
+    vecs = np.array(vecs)
+    vecs_flatten = np.array([np.array(v).flatten() for v in vecs])
+
+    #csv로 파일 생성
+    output_path = "output_as_csv/"
+    model_name = output_path + "review_" + tokenizer + "_" + str(feature_size) + ".csv"
+    with open(model_name, mode="w", encoding="utf-8") as fp:
+        wr = csv.writer(fp)
+        for v in vecs_flatten:
+            wr.writerow(v)
+            
 
 if __name__=="__main__" :
     #feature_size = [50, 100, 200, 300]
@@ -59,5 +83,6 @@ if __name__=="__main__" :
     for i in feature_size :
         w2v_embedding("mecab", i)
         w2v_embedding("cohesion", i)
+        fastText_embedding("fastText", i)
 
 
